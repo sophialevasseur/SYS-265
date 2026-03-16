@@ -1,0 +1,59 @@
+- name: System Administration and Hardening for Rocky Linux hosts
+  hosts: rocky
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Element 1 - Ensure htop is installed
+      dnf:
+        name: htop
+        state: present
+
+    - name: Element 2 - Ensure local support user springadmin exists
+      user:
+        name: springadmin
+        comment: Spring Break Support Admin
+        shell: /bin/bash
+        state: present
+        create_home: yes
+
+    - name: Element 3 - Disable root SSH login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin no'
+        backup: yes
+      notify: restart sshd
+
+    - name: Element 4 - Ensure telnet package is absent
+      dnf:
+        name: telnet
+        state: absent
+
+  handlers:
+    - name: restart sshd
+      service:
+        name: sshd
+        state: restarted
+
+
+- name: AD DS GPO-style hardening for domain joined Windows hosts
+  hosts: windows
+  gather_facts: yes
+
+  tasks:
+    - name: Element 5 - Disable Control Panel for users
+      win_regedit:
+        path: HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
+        name: NoControlPanel
+        data: 1
+        type: dword
+        state: present
+
+    - name: Element 6 - Disable Command Prompt for users
+      win_regedit:
+        path: HKLM:\Software\Policies\Microsoft\Windows\System
+        name: DisableCMD
+        data: 1
+        type: dword
+        state: present
